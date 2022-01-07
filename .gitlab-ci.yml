@@ -1,0 +1,17 @@
+image: python:3.8
+
+stages:
+  - build
+
+build:
+  stage: build
+  script:
+    - python --version > py-ver.log
+    - python setup.py sdist bdist_wheel > package.log 2>&1
+  artifacts:
+      when: always
+      paths:
+        - package.log
+        - py-ver.log
+        - dist/*.whl
+

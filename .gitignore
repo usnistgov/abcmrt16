@@ -1,0 +1,22 @@
+
+#ignore PDF files
+*.pdf
+
+#ignore matlab temp files
+*.asv
+
+#ignore version file
+abcmrt/version.py
+
+#ignore python packaging things
+abc_mrt_nist.egg-info/
+abcmrt/__pycache__/
+*.egg-info/
+build/
+dist/
+.eggs/
+
+#ignore csv files
+*.csv
+
+
