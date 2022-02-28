@@ -2,8 +2,12 @@
 Code for running articulation band correlation - modified rhyme tests (ABC-MRT). 
 
 # Building and Installing the Package Locally
+To install the package run the following:
+```
+pip install abcmrt16
+```
 
-To build and install the package, clone this repository and run the following
+Alternatively, to build and install the package, clone this repository and run the following
 from the root of the git repository :
 
 ```
