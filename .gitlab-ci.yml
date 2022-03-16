@@ -2,6 +2,11 @@ image: python:3.8
 
 stages:
   - build
+  - deploy
+
+include:
+  - project: 'PSCR/MCV/mcvqoe-measurements'
+    file: '/templates/upload-pypi.yml'
 
 build:
   stage: build
