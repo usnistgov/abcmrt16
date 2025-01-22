@@ -23,7 +23,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'numpy','scipy'
+        'numpy','scipy','silero_vad'
     ],
     python_requires='>=3.6',
 )
