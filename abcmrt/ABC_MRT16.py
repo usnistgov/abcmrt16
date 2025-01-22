@@ -1,15 +1,17 @@
-# Python Libraries
 import io
 import math
+import numpy.matlib
 import os.path
+import scipy.signal
 import pkgutil
 import re
+
+from silero_vad import load_silero_vad, get_speech_timestamps
 from warnings import warn
 
 import numpy as np
-import numpy.matlib
 import scipy.io as sio
-import scipy.signal
+
 
 """
  --------------------------Background--------------------------
@@ -229,6 +231,7 @@ def file2number(file):
     >>>abcmrt.file2number('M3_b24_w2_orig.wav')
     740
     """
+    
     # remove extraneous path components
     name = os.path.basename(file)
     # find talker, batch and word from filename
@@ -242,6 +245,7 @@ def file2number(file):
     except ValueError:
         # invalid talker number
         return None
+    
     # return file number
     return talker_index * 300 + (int(m.group("batch")) - 1) * 6 + int(m.group("word"))
 
@@ -266,6 +270,7 @@ def number2file(num):
 
     abcmrt.file_order
     """
+    
     if num < 1 or num > 1200:
         raise ValueError(f"Invalid input {num} must be between 1-1200.")
     talkers = ["F1", "F3", "M3", "M4"]
@@ -281,6 +286,7 @@ def number2file(num):
     word_index = (num - 1) % words + 1
 
     file = f"{talkers[talker_index]}_b{batch_index}_w{word_index}.wav"
+    
     return file
 
 
@@ -310,6 +316,7 @@ def file_order():
     >>> f_order = file_order()
     >>> subset_file_numbers = f_order[:16]
     """
+    
     # fmt: off
     file_order = [
         232, 393, 1068, 729, 230, 470, 910, 831, 288, 562, 1174, 632,
@@ -448,6 +455,7 @@ def guess_correction(intell):
     0
 
     """
+    
     return (6 / 5) * (intell - (1 / 6))
 
 
@@ -526,6 +534,7 @@ def process(speech, file_num, verbose=False):
     >>>abcmrt.process(noisy_audio,file_num)
     This should give values less than 1
     """
+    
     # make sure templates are loaded
     load_templates()
     # Handle single audio file case
@@ -549,21 +558,32 @@ def process(speech, file_num, verbose=False):
             success[k] = np.nan
 
         else:
-            # Check for speech using autocorrelation
-            # If the signals are periodic (speech), there will be anticorrelation
-            # If the signals are noise, there will be no anticorrelation
-            # NaN is returned from xcorr if the autocorrelation at lag zero is 0 due to normalization
 
-            xcm = np.min(scipy.signal.correlate(speech[k], speech[k], mode="full") / np.inner(speech[k], speech[k]))
+            # Use the new speech detection: Silero VAD (Voice Activity Detection).
+            # Returns an empty list if there's no speech detected, and
+            # a list containing the start/end of speech if detected.
+            
+            # Resample Silero to 16000 using scipy.signal.resample
+            silero_dat = scipy.signal.resample(speech[k], int(len(speech[k]) * 16000 / fs))
 
-            if xcm > -0.1 or math.isnan(xcm):
+            # Create our Silero instance and run speech detection or VAD
+            model = load_silero_vad()
+            speech_timestamps = get_speech_timestamps(
+                silero_dat,
+                model,
+                return_seconds=True
+            )
+
+            if len(speech_timestamps) == 0:
                 # Speech not detected, skip the algorithm
                 success[k] = 0
 
                 if verbose == True:
                     msg = f"In clip #{k}, speech not detected"
                     warn(msg)
+
             else:
+                # We have detected speech (non-empty list), run algorithm
                 if verbose == True:
                     msg = f"Working on clip {k} of {len(speech)}"
                     print(msg, "\n")
@@ -678,6 +698,7 @@ def _T_to_TF(x):
         X : numpy array
             Time-frequency representation. First 215 values.
     """
+    
     m = x.size
     n = 512
     nframes = math.ceil((m - n) / (n / 4)) + 1
